@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.keras import metrics as keras_metrics
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -30,8 +31,18 @@ class IoTAnomalyDetector:
             layers.Dense(16, activation='relu'),
             layers.Dense(1, activation='sigmoid')
         ])
-        model.compile(optimizer='adam', loss='binary_crossentropy', 
-                     metrics=['accuracy', 'precision', 'recall'])
+        
+        # ВИПРАВЛЕНО: використовуємо класи метрик замість рядків
+        model.compile(
+            optimizer='adam', 
+            loss='binary_crossentropy', 
+            metrics=[
+                'accuracy',
+                keras_metrics.Precision(name='precision'),
+                keras_metrics.Recall(name='recall')
+            ]
+        )
+        
         self.model = model
         print("✅ Модель створено")
         return model
@@ -44,10 +55,15 @@ class IoTAnomalyDetector:
         self.build_classifier_model()
         X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
         
-        self.history = self.model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size,
-                                      validation_data=(X_test, y_test), verbose=1)
+        self.history = self.model.fit(
+            X_train, y_train, 
+            epochs=epochs, 
+            batch_size=batch_size,
+            validation_data=(X_test, y_test), 
+            verbose=1
+        )
         
-        y_pred = (self.model.predict(X_test) > 0.5).astype(int)
+        y_pred = (self.model.predict(X_test, verbose=0) > 0.5).astype(int)
         print("\n📊 Результати:")
         print(classification_report(y_test, y_pred, target_names=['Benign', 'Malicious']))
         return self.history, (X_test, y_test)

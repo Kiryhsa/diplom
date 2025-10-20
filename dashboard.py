@@ -8,7 +8,7 @@ import time
 import sys
 import os
 
-# Налаштування сторінки - ПЕРШЕ що має бути
+# Налаштування сторінки
 st.set_page_config(
     page_title="IoT Security AI Monitor",
     page_icon="🛡️",
@@ -18,22 +18,13 @@ st.set_page_config(
 # Додаємо src до шляху
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-# Імпорт модулів з обробкою помилок
-@st.cache_resource
-def load_modules():
-    try:
-        from data_loader import IoTDataLoader
-        from model_training import IoTAnomalyDetector
-        from simulator import IoTTrafficSimulator
-        return IoTDataLoader, IoTAnomalyDetector, IoTTrafficSimulator, None
-    except ImportError as e:
-        return None, None, None, str(e)
-
-IoTDataLoader, IoTAnomalyDetector, IoTTrafficSimulator, import_error = load_modules()
-
-if import_error:
-    st.error(f"❌ Помилка імпорту: {import_error}")
-    st.info("💡 Переконайтесь що файли data_loader.py, model_training.py, simulator.py є в папці src/")
+# Імпорт модулів БЕЗ кешування
+try:
+    from data_loader import IoTDataLoader
+    from model_training import IoTAnomalyDetector
+    from simulator import IoTTrafficSimulator
+except ImportError as e:
+    st.error(f"❌ Помилка імпорту: {e}")
     st.stop()
 
 # Мінімальний CSS
@@ -138,7 +129,7 @@ if mode == "🎬 Live Demo":
         if st.session_state.simulation_running:
             simulator = IoTTrafficSimulator()
             
-            for _ in range(20):
+            for iteration in range(20):
                 if not st.session_state.simulation_running:
                     break
                 
@@ -178,12 +169,12 @@ if mode == "🎬 Live Demo":
                                  color_discrete_map={'Benign': '#4caf50', 'DDoS': '#f44336', 
                                                     'PortScan': '#ff9800', 'Mirai': '#9c27b0'})
                     fig1.update_layout(showlegend=False, height=250)
-                    chart1.plotly_chart(fig1, use_container_width=True, key=f"chart1_{_}")
+                    chart1.plotly_chart(fig1, use_container_width=True)
                     
                     recent = st.session_state.traffic_data.tail(30)
                     fig2 = px.line(recent, y='rate', color='label')
                     fig2.update_layout(height=250)
-                    chart2.plotly_chart(fig2, use_container_width=True, key=f"chart2_{_}")
+                    chart2.plotly_chart(fig2, use_container_width=True)
                     
                     cols = ['timestamp', 'device', 'label', 'rate', 'spkts']
                     table.dataframe(st.session_state.traffic_data[cols].tail(10), use_container_width=True)
@@ -249,12 +240,12 @@ elif mode == "📈 Статистика":
         
         st.code("""
 TensorFlow Model:
-• Input: 8 features
-• Dense(128) + Dropout(0.3)
-• Dense(64) + Dropout(0.3)  
-• Dense(32) + Dropout(0.2)
-• Dense(16)
-• Output(1) Sigmoid
+- Input: 8 features
+- Dense(128) + Dropout(0.3)
+- Dense(64) + Dropout(0.3)  
+- Dense(32) + Dropout(0.2)
+- Dense(16)
+- Output(1) Sigmoid
         """)
         
         detection_data = {
@@ -266,4 +257,3 @@ TensorFlow Model:
 
 # Футер
 st.markdown("---")
-st.caption("🎓 Магістерська робота | TensorFlow + Streamlit | v1.0.0")
